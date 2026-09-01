@@ -1,69 +1,133 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback } from "react";
+import ChatPanel, { Message } from "@/components/ChatPanel";
+import GamePreview from "@/components/GamePreview";
+import { GameConfig, defaultConfig } from "@/lib/gameTemplate";
+
+type Tab = "chat" | "game";
+
+function extractGameConfig(text: string): GameConfig | null {
+  const match = text.match(/```gameconfig\s*([\s\S]*?)```/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1].trim()) as GameConfig;
+  } catch {
+    return null;
+  }
+}
 
 export default function Home() {
+  const [tab, setTab] = useState<Tab>("chat");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [gameConfig, setGameConfig] = useState<GameConfig>(defaultConfig);
+  const [bitMode, setBitMode] = useState<"8" | "16">("8");
+
+  const send = useCallback(async () => {
+    if (!input.trim() || loading) return;
+
+    const userMsg: Message = { role: "user", content: input.trim() };
+    const next = [...messages, userMsg];
+    setMessages(next);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: next }),
+      });
+      const data = await res.json();
+      const aiMsg: Message = { role: "assistant", content: data.content };
+      setMessages((prev) => [...prev, aiMsg]);
+
+      const newConfig = extractGameConfig(data.content);
+      if (newConfig) {
+        setGameConfig(newConfig);
+        setTab("game");
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Oops! Something went wrong. Try again! 🎮" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [input, loading, messages]);
+
+  const tabStyle = (t: Tab): React.CSSProperties => ({
+    flex: 1,
+    padding: "12px 0",
+    fontSize: "9px",
+    textAlign: "center",
+    background: tab === t ? "#e94560" : "#0f3460",
+    color: "#fff",
+    cursor: "pointer",
+    border: "none",
+    borderBottom: tab === t ? "3px solid #ff6b85" : "3px solid #000",
+    fontFamily: "'Press Start 2P', monospace",
+    letterSpacing: "0.05em",
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "#0d0d1a" }}>
+      {/* Header */}
+      <div style={{
+        background: "#1a1a2e",
+        borderBottom: "3px solid #e94560",
+        padding: "10px 14px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: "10px", color: "#e94560", letterSpacing: "0.05em" }}>
+          🎮 GAME STUDIO
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div style={{ display: "flex", gap: "6px" }}>
+          {(["8", "16"] as const).map((b) => (
+            <button
+              key={b}
+              onClick={() => setBitMode(b)}
+              className="pixel-btn"
+              style={{
+                background: bitMode === b ? "#e94560" : "#0f3460",
+                color: "#fff",
+                fontSize: "7px",
+                padding: "5px 8px",
+              }}
+            >
+              {b}-BIT
+            </button>
+          ))}
         </div>
-      </main>
+      </div>
+
+      {/* Tab bar */}
+      <div style={{ display: "flex", flexShrink: 0 }}>
+        <button style={tabStyle("chat")} onClick={() => setTab("chat")}>💬 CHAT</button>
+        <button style={tabStyle("game")} onClick={() => setTab("game")}>🕹️ GAME</button>
+      </div>
+
+      {/* Content — both rendered, only one visible, so iframe stays alive */}
+      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, display: tab === "chat" ? "flex" : "none", flexDirection: "column" }}>
+          <ChatPanel
+            messages={messages}
+            input={input}
+            loading={loading}
+            onInputChange={setInput}
+            onSend={send}
+          />
+        </div>
+        <div style={{ position: "absolute", inset: 0, display: tab === "game" ? "flex" : "none", flexDirection: "column" }}>
+          <GamePreview config={gameConfig} />
+        </div>
+      </div>
     </div>
   );
 }

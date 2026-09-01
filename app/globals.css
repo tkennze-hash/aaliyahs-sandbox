@@ -1,26 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0d0d1a;
+  --surface: #1a1a2e;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --text: #e0e0e0;
+  --yellow: #f5c518;
+  --green: #00ff88;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+#__next, main {
+  height: 100%;
 }
+
+.pixel-border {
+  border: 3px solid var(--accent);
+  box-shadow: 4px 4px 0 #000;
+}
+
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  border: 3px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  cursor: pointer;
+  transition: transform 0.05s, box-shadow 0.05s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.pixel-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.chat-bubble-ai {
+  background: var(--accent2);
+  border-left: 3px solid var(--green);
+}
+
+.chat-bubble-user {
+  background: var(--accent);
+}
+
+input, textarea {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent); }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink { animation: blink 1s step-end infinite; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.2s ease-out forwards; }
