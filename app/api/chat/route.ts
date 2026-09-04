@@ -62,19 +62,24 @@ export async function POST(req: NextRequest) {
       parts: [{ text: m.content }],
     }));
 
+    const errors: string[] = [];
     for (let i = 0; i < MODELS.length; i++) {
       try {
         const text = await geminiCall(MODELS[i], contents, systemText);
         return NextResponse.json({ content: text });
       } catch (e) {
-        console.warn(`Gemini ${MODELS[i]} failed:`, e);
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push(`${MODELS[i]}: ${msg}`);
+        console.warn(`Gemini ${MODELS[i]} failed:`, msg);
         if (i < MODELS.length - 1) await new Promise((r) => setTimeout(r, 1000));
       }
     }
 
-    return NextResponse.json({ content: ERROR_MSG }, { status: 500 });
+    console.error("All Gemini models failed:", errors);
+    return NextResponse.json({ content: ERROR_MSG, debug: errors }, { status: 500 });
   } catch (err) {
-    console.error("Gemini route error:", err);
-    return NextResponse.json({ content: ERROR_MSG }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Gemini route error:", msg);
+    return NextResponse.json({ content: ERROR_MSG, debug: [msg] }, { status: 500 });
   }
 }
