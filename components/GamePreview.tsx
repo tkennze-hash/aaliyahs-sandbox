@@ -1,15 +1,18 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { GameConfig, buildGameHTML } from "@/lib/gameTemplate";
+import { GameConfig, buildGameHTML, buildCustomGameHTML } from "@/lib/gameTemplate";
 
 interface GamePreviewProps {
   config: GameConfig;
+  bitMode?: "8" | "16" | "hd";
 }
 
-export default function GamePreview({ config }: GamePreviewProps) {
+export default function GamePreview({ config, bitMode = "8" }: GamePreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const srcDoc = buildGameHTML(config);
+  const srcDoc = (config.gameType === "custom" && config.customSceneCode)
+    ? buildCustomGameHTML(config.customSceneCode, bitMode)
+    : buildGameHTML(config, bitMode);
 
   const sendKey = useCallback((type: "KEYDOWN" | "KEYUP", key: string) => {
     iframeRef.current?.contentWindow?.postMessage({ type, key }, "*");
