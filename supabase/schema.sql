@@ -46,3 +46,8 @@ create policy "public all" on sessions for all using (true) with check (true);
 create policy "public all" on messages for all using (true) with check (true);
 create policy "public all" on games    for all using (true) with check (true);
 create policy "public all" on concepts for all using (true) with check (true);
+
+-- grant base table access to anon role (required alongside RLS policies)
+grant usage on schema public to anon, authenticated;
+grant all on all tables in schema public to anon, authenticated;
+grant all on all sequences in schema public to anon, authenticated;
